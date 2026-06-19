@@ -1,0 +1,445 @@
+% =====================================================================
+%  CSLAP_Robust_Covering_draft.tex
+%  Standalone elsarticle draft (Stage 6 / Academic Writer output).
+%  Topic: a covering-based instance transformation that recasts CSLAP
+%  placement as a data-driven robust counterpart, with an honest,
+%  conditional out-of-sample evaluation.
+%
+%  This file is self-contained (compiles alone) and may also be
+%  \input{} into the main manuscript. It does NOT modify
+%  Computers_and_Operations_Research_manuscript.tex.
+%
+%  ------------------------------------------------------------------
+%  NOTATION-COLLISION FLAGS (raised per Stage-2 method report policy):
+%   (1) The main manuscript reserves $k$ for the LIMITED-REASSIGNMENT
+%       relocation cap (see manuscript eq. \eqref{constraint:reassignment},
+%       Sec. limited_reassignment). This draft uses $\kappa$ for the
+%       PATTERN-SIZE cap to avoid the clash. Any merge MUST keep the two
+%       symbols distinct.
+%   (2) The main manuscript reserves $P$ for the PRODUCT SET. The covering
+%       objective value (max cover size) is therefore written $\Pi$, never
+%       $P$, throughout this draft.
+%   (3) The main manuscript uses $K_s$ for STATION assignment patterns in
+%       its column-generation model. The covering patterns here are
+%       $q \in Q$, a different object; no symbol is shared, so no collision.
+%   (4) The downstream placement model is the UNCHANGED manuscript model;
+%       this draft cites its labels \eqref{obj} and \eqref{con14}--\eqref{con17}
+%       directly. When compiled standalone these references are provided as
+%       local equation labels; when \input into the manuscript, remove the
+%       local copies in Section~\ref{sec:rc-method} (block guarded below).
+%  ------------------------------------------------------------------
+% =====================================================================
+\documentclass[preprint,review,11pt,authoryear]{elsarticle}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{threeparttable}
+
+\usepackage{amsthm}
+\newtheorem{proposition}{Proposition}
+
+\usepackage{setspace}\onehalfspacing
+\usepackage{enumitem}
+\setlist{nosep}
+
+\biboptions{authoryear,round,sort&compress}
+\usepackage{hyperref}
+\usepackage[capitalize,noabbrev,nameinlink]{cleveref}
+
+\crefname{section}{Section}{Sections}
+\Crefname{section}{Section}{Sections}
+
+\journal{Computers \& Operations Research}
+
+\begin{document}
+\begin{frontmatter}
+
+\title{A Covering-Based Robust Counterpart for the Correlated Storage Location Assignment Problem: a Conditional Out-of-Sample Study}
+
+%\author{Anonymous Author(s)}
+%\address{Anonymous Affiliation(s)}
+
+\begin{abstract}
+The Correlated Storage Location Assignment Problem (CSLAP) places products across picking stations to reduce the station visits an order incurs. Layouts are normally optimized on a fixed window of past orders, which raises a question this paper studies directly: does optimizing on a deliberately enlarged demand object protect the layout against order-distribution shift, and at what nominal cost? We answer it with a covering-based instance transformation. A column-generation cover partitions the product universe into patterns of size at most $\kappa$, replaces each observed order by its pattern-closure, and feeds the enlarged instance to the existing CSLAP solvers unchanged. We prove that minimizing visits on the transformed instance equals solving a static robust counterpart of the empirical CSLAP objective under order-wise subset-closed uncertainty sets (Proposition~\ref{prop:rc-identity}), so the construction has an exact robust-optimization reading rather than a heuristic analogy. A second proposition gives a worst-case per-order visit bound that holds conditionally on the full-stream cover statistic. We evaluate the layout out of sample on a parametric order-shift family and on one industrial temporal hold-out. The price of robustness is stable: every one of the 18 genuine synthetic cells records a positive nominal price. The out-of-sample gain is not stable. Across three training seeds only the genetic-algorithm layout at $\kappa=2$ replicates a positive gain (pooled Wilcoxon $p=0.003$, mean $+0.58\%$, 95\% CI $[+0.18,+0.98]$); a single-seed cross-solver signal reported in an earlier run did not replicate, no global directional effect is present (11 of 18 cells positive, sign-test $p=0.48$), and the predicted interior optimum in $\kappa$ is absent. On one industrial temporal hold-out the greedy clustering heuristic, the only solver that both scaled and produced distinct layouts, lowered training visits and out-of-sample test visits at the same time; we explain this as benign suboptimality of the greedy solver, not a free lunch, and exclude leakage by an independent recomputation on a disjoint temporal split. We report the negative-replication finding as a contribution. The construction is sound and reusable; its robustness payoff at this scale is conditional on solver and seed.
+\end{abstract}
+
+\begin{keyword}
+Storage location assignment \sep Robust optimization \sep Set covering \sep Data-driven uncertainty sets \sep Out-of-sample evaluation
+\end{keyword}
+
+\end{frontmatter}
+
+% =====================================================================
+\section{Introduction}\label{sec:rc-intro}
+% =====================================================================
+
+A correlated storage layout is fitted to a record of past orders and then operated for weeks or months while demand drifts. The fitting step minimizes station visits on the observed orders. The operating step pays the visit count of whatever orders actually arrive. When the two distributions differ, a layout tuned exactly to the training orders can generalize worse than one fitted to a coarser, more conservative view of demand. This paper studies whether deliberately enlarging the demand object before optimization buys out-of-sample protection, and what nominal price that protection carries.
+
+We state the question as a hypothesis. \textbf{H1}: a layout optimized on an enlarged covering instance is more robust to future order-distribution shift than a layout optimized directly on the observed orders, at a bounded nominal-cost price. H1 is a hypothesis to be tested, not a claim we assert. The contribution of the paper is partly a positive construction and partly an honest negative result about when that construction pays off.
+
+The construction is an instance transformation. A column-generation set cover partitions the product universe into patterns of size at most $\kappa$. Each observed order is then replaced by the union of the patterns it touches, its pattern-closure. The enlarged orders are written back in the standard CSLAP schema and solved by the unchanged placement model, objective~\eqref{obj} under constraints~\eqref{con14}--\eqref{con17}. No solver is modified. The parameter $\kappa$ is the conservatism knob: at $\kappa=1$ the transform is the identity and recovers the nominal problem; larger $\kappa$ yields coarser patterns, larger closures, and a more conservative layout.
+
+The construction is not a loose analogy to robust optimization. We prove an identity (Proposition~\ref{prop:rc-identity}): minimizing visits on the transformed instance equals solving the static robust counterpart of the empirical objective under order-wise subset-closed uncertainty sets. The inner maximization is trivial because the visit function is monotone in the order set, so the robust counterpart is solved exactly by the nominal solvers. The uncertainty set is learned from data through the cover, in the spirit of data-driven uncertainty-set design \citep{bgk2018}, but without a finite-sample statistical guarantee that future orders fall inside it. That guarantee is exactly the empirical content of H1.
+
+We make four contributions.
+\begin{enumerate}
+  \item A covering-based instance transformation that recasts CSLAP placement as a data-driven robust counterpart, with an exact identity (Proposition~\ref{prop:rc-identity}) and a conditional worst-case visit bound (Proposition~\ref{prop:wc-bound}).
+  \item An out-of-sample evaluation protocol with no train/test leakage, covering a parametric order-shift family and one industrial temporal hold-out.
+  \item One replicated positive synthetic result: the genetic-algorithm layout at $\kappa=2$ gains out of sample with a sign-stable, statistically significant effect across three training seeds.
+  \item A partially negative result, reported as a contribution: a single-seed cross-solver gain does not replicate, no global directional effect is present, the predicted interior optimum in $\kappa$ is absent, and the one industrial positive rests on a single temporal cell with one solver.
+\end{enumerate}
+
+The honest summary is that the construction is sound and the price of robustness is real and stable, while the out-of-sample payoff at the tested scale is conditional on the solver and the training seed.
+
+% =====================================================================
+\section{Related work and background}\label{sec:rc-related}
+% =====================================================================
+
+\paragraph{Covering and set partitioning.}
+Set covering, set partitioning, and set packing are the three canonical zero-one models for selecting subsets that meet coverage requirements. The polyhedral structure and solution methods of set partitioning are surveyed by \citet{balas1976}, and set cover is among the original NP-complete problems of \citet{karp1972}. Selecting patterns from an exponential family through a master linear program and a pricing subproblem is standard branch-and-price machinery, and it appears in warehousing as order batching cast as set partitioning \citep{gademann2005}. Our master is an exact-cover (partition) variant whose objective is a min-max bottleneck rather than a min-cardinality cover: it minimizes the maximum number of selected patterns that any observed order touches. We did not locate this exact object under a single established name in the warehousing literature, so we treat it as a min-max overlap criterion on a hypergraph whose hyperedges are the observed orders.
+
+\paragraph{Optimization under uncertainty.}
+Robust optimization fixes a deterministic set of admissible realizations and optimizes against its worst case \citep{bental1999}, with budgeted variants tuning conservatism through a cardinality parameter \citep{bertsimas2004}; the field is surveyed by \citet{bbc2011}. Distributionally robust optimization replaces the set of realizations with an ambiguity set of distributions and optimizes worst-case expected cost, using moment information \citep{delage2010} or a Wasserstein ball around the empirical distribution \citep{esfahani2018}. Stochastic programming optimizes expected cost over a modeled or sampled distribution \citep{birge2011}, with sample average approximation as the Monte-Carlo bridge \citep{kleywegt2002} and scenario reduction \citep{heitsch2003} and policy aggregation \citep{rockafellar1991} as the scenario-management tools. The construction here borrows the worst-case reading from robust optimization and the learn-the-set idea from data-driven robust optimization \citep{bgk2018}, but it is not sample average approximation (no sampling or expectation over generated scenarios) and not policy aggregation (no probability weights, no non-anticipativity).
+
+\paragraph{Storage assignment under uncertainty.}
+The storage location assignment problem is NP-hard and is reviewed broadly by \citet{dekoster2007} and specifically by \citet{reyes2019}, who note that most work is deterministic and that demand uncertainty is comparatively under-addressed. Correlation-based slotting is the deterministic backbone: order-oriented slotting stores co-occurring products together \citep{mantel2007}, correlated storage assignment minimizes zone visits under picking capacity \citep{xiao2012}, and a demand-correlation-pattern model formalizes the co-occurrence signal \citep{zhang2019}. The closest prior work on robustness to demand shift extends affinity-based slotting to multiple periods and tests how correlation layouts behave when order patterns change \citep{kofler2014}; it builds the layout from affinity directly rather than from a covering construction.
+
+\paragraph{Positioning.}
+The components of the construction are individually established; the combination is not. We position it as a hybrid of two lines: data-driven uncertainty-set design \citep{bgk2018}, which supplies the formal robustness reading, and correlated-clustering storage assignment \citep{xiao2012,mantel2007,zhang2019}, which supplies the warehouse mechanism. The distinction from \citet{xiao2012} is purpose and construction: they aggregate by correlation clustering as a modeling convenience with no robustness claim, while we aggregate by a min-max-$\Pi$ optimal cover and ask whether the aggregation itself protects the layout.
+
+% =====================================================================
+\section{Method}\label{sec:rc-method}
+% =====================================================================
+
+We follow the notation of the main CSLAP model. $P$, $O$, $S$ are the sets of products, orders, and stations; $P_o \subseteq P$ is the product set of order $o$; $\zeta_s$ is the slot capacity of station $s$; $L_p$ is the daily pick-line count of product $p$; $V_s$ and $T_s$ are the speed and time capacity of station $s$. A layout is a map $a: P \to S$ assigning each product to one station, encoded by the binary variables $x_{ps}$ of the placement model. The visit count of a layout $a$ on an order set $u \subseteq P$ is
+\begin{equation}
+v(a,u) = \big|\{\, a(p) : p \in u \,\}\big|.
+\label{eq:rc-visit}
+\end{equation}
+This function is monotone: $u \subseteq u'$ implies $v(a,u) \le v(a,u')$.
+
+% --- BLOCK to remove when \input into the main manuscript (labels exist there) ---
+% The unchanged downstream placement model (main manuscript objective and
+% constraints). Provided here so the standalone file compiles with valid
+% \eqref targets. When merging, delete this block and let cleveref resolve
+% \eqref{obj} and \eqref{con14}--\eqref{con17} against the manuscript.
+\begin{equation}
+\min \sum_{o \in O} \sum_{s \in S} z_{os}
+\label{obj}
+\end{equation}
+\begin{align}
+&\sum_{s \in S} x_{ps} = 1 && \forall p \in P \label{con14}\\
+&\sum_{p \in P} x_{ps} \le \zeta_s && \forall s \in S \label{con15}\\
+&x_{ps} \le z_{os} && \forall p \in P_o,\ \forall o \in O,\ \forall s \in S \label{con16}\\
+&\sum_{p \in P_o} x_{ps}\, \frac{L_p}{V_s} \le T_s && \forall s \in S \label{con17}
+\end{align}
+% --- end removable block ---
+
+\subsection{The covering construction operator}\label{sec:rc-cover}
+
+Let $O^{tr}$ be the training orders with supports $\{P_o\}$. The construction operator $C_\kappa$ takes the training supports and returns a pattern family $Q^\* = \{q_1,\dots,q_m\}$ with each $q_j \subseteq P$ and $1 \le |q_j| \le \kappa$, together with the achieved bottleneck $\Pi^\*$. It solves the integer master
+\begin{align}
+\min\ &\Pi \label{eq:rc-master-obj}\\
+\text{s.t.}\quad &\sum_{q \ni p} x_q = 1 && \forall p \in P \label{eq:rc-master-cover}\\
+&\sum_{q:\, q \cap P_o \neq \emptyset} x_q \le \Pi && \forall o \in O^{tr}_{\neq} \label{eq:rc-master-bottleneck}
+\end{align}
+over patterns $q$ with $1 \le |q| \le \kappa$, where $O^{tr}_{\neq}$ ranges over distinct order supports. Patterns are priced by
+\begin{equation}
+\max_{z,w}\ \sum_{p \in P} \alpha_p z_p + \sum_o \beta_o w_o
+\quad \text{s.t.}\quad
+1 \le \sum_p z_p \le \kappa,\ \ w_o \ge z_p\ \ \forall o,\ \forall p \in P_o,\ \ z,w \in \{0,1\},
+\label{eq:rc-pricing}
+\end{equation}
+with $\alpha_p$ the duals of \eqref{eq:rc-master-cover} and $\beta_o \le 0$ the duals of \eqref{eq:rc-master-bottleneck}. The cover is an exact partition: constraint \eqref{eq:rc-master-cover} forces each product into exactly one selected pattern. The partition structure is a feasibility requirement, not a robustness defect, because the placement model assigns each product to exactly one station (constraint~\eqref{con14}); a product spread across several patterns could not be realized by any single-station assignment. Robustness in this construction comes from enlargement through $\kappa$, not from redundant coverage.
+
+For each training order, the cover and pattern-closure are
+\begin{equation}
+Q(o) = \{q \in Q^\* : q \cap P_o \neq \emptyset\},
+\qquad
+\bar P_o = \bigcup_{q \in Q(o)} q.
+\label{eq:rc-closure}
+\end{equation}
+The closure encloses the order, $P_o \subseteq \bar P_o$, because the cover partitions $P$. The induced uncertainty set is the family of order compositions expressible within at most $\Pi^\*$ patterns of the learned partition,
+\begin{equation}
+\widehat{\mathcal U}_\kappa = \Big\{\, u \subseteq P : \exists\, R \subseteq Q^\*,\ |R| \le \Pi^\*,\ u \subseteq \textstyle\bigcup_{q \in R} q \,\Big\},
+\label{eq:rc-uset}
+\end{equation}
+and the empirical support is contained in it, $\{P_o : o \in O^{tr}\} \subseteq \widehat{\mathcal U}_\kappa$. The construction therefore encloses the observed support, the conservative direction in robust optimization. It makes no statement about the probability that a future order lands in $\widehat{\mathcal U}_\kappa$; that statement is H1.
+
+\subsection{The enlarged-instance transform}\label{sec:rc-transform}
+
+The transform $\mathcal T$ writes a new instance under the prefix \texttt{pkk}$\kappa$ in the standard schema. It replaces each training order $o$ by one pseudo-order whose product set is the closure $\bar P_o$, keeping duplicate closures so that order frequency carries through to the objective. The products file is carried over unchanged. The stations file keeps capacity and speed unchanged but recalibrates the time capacity, because the closures inflate the apparent line counts. With $\bar L_p$ the count of training orders whose closure contains $p$ and homogeneous speeds, the recalibrated time capacity is
+\begin{equation}
+\bar T_s = \Big\lceil 1.10 \cdot \frac{\sum_p \bar L_p / V_s}{|S|} \Big\rceil \qquad \forall s \in S.
+\label{eq:rc-Ts}
+\end{equation}
+The recalibrated workload signal $\bar L_p$ over-weights products that sit in frequently hit patterns, so it is a conservative proxy. We do not claim constraint robustness. True feasibility of the resulting layout is checked after optimization on the real $L_p$ and $T_s$ and reported through the standard \texttt{cap\_broken} and \texttt{wl\_broken} fields. The downstream solvers then minimize the unchanged objective~\eqref{obj} under constraints~\eqref{con14}--\eqref{con17} on $\mathcal T(\text{instance})$.
+
+\subsection{The robust-counterpart identity}\label{sec:rc-prop}
+
+\begin{proposition}[Robust-counterpart identity]\label{prop:rc-identity}
+Let $\mathcal B(o) = \{u : u \subseteq \bar P_o\}$ be the subset-closed box of order $o$, and let $\mathcal A$ be the feasible layout set of \eqref{con14},\eqref{con15},\eqref{con17}. Then
+\begin{equation}
+\min_{a \in \mathcal A} \sum_{o \in O^{tr}} v(a, \bar P_o)
+\;=\;
+\min_{a \in \mathcal A} \sum_{o \in O^{tr}} \max_{u \in \mathcal B(o)} v(a, u).
+\label{eq:rc-identity}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Fix a layout $a$. The visit function \eqref{eq:rc-visit} is monotone in its second argument, so for each order $o$ the inner maximum over $\mathcal B(o)$ is attained at the full closure, $\max_{u \subseteq \bar P_o} v(a,u) = v(a,\bar P_o)$. Summing over orders gives the equality of objectives for every $a$, hence equality of the minima.
+\end{proof}
+
+Solving the transformed instance is therefore solving a static robust counterpart of the empirical CSLAP objective under order-wise subset-closed uncertainty boxes. The adversary decouples across empirical atoms, so \eqref{eq:rc-identity} also equals a distributionally robust program whose ambiguity set transports each empirical order anywhere inside its closure box. The inner maximization is trivial under monotonicity, which is why the unchanged nominal solvers solve the robust counterpart exactly. What is structural is the identity \eqref{eq:rc-identity}. What is conjectural is that future orders fall inside $\widehat{\mathcal U}_\kappa$, and therefore that the layout gains out of sample. We keep the two separate throughout.
+
+\begin{proposition}[Conditional worst-case visit bound]\label{prop:wc-bound}
+If a layout $a$ assigns every pattern $q \in Q^\*$ wholly to a single station, then
+$\sup_{u \in \widehat{\mathcal U}_\kappa} v(a,u) \le \Pi^\*$.
+\end{proposition}
+
+\begin{proof}
+Any $u \in \widehat{\mathcal U}_\kappa$ satisfies $u \subseteq \bigcup_{q \in R} q$ for some $R \subseteq Q^\*$ with $|R| \le \Pi^\*$. If each pattern is wholly assigned to one station, then $a(u) \subseteq \{a(q) : q \in R\}$, a set of at most $\Pi^\*$ stations.
+\end{proof}
+
+The bound is conditional in two ways that the experimental sections take seriously. First, a pattern-whole layout need not exist, because station capacities sum exactly to $|P|$ and a perfect packing of patterns into stations may be infeasible; when patterns split across stations the bound degrades gracefully to $v(a,u) \le \sum_{q \in R} |a(q)|$. Second, $\Pi^\*$ is the bottleneck over the supports the master actually saw. When the master is run on a subsampled support set, the certified $\Pi^\*$ binds only that subset, and the true full-stream bottleneck $\Pi_{\text{true}}$ can be larger. We write $\Pi_{\text{constrained}}$ for the former and $\Pi_{\text{true}}$ for the latter and report both for the industrial instance in Section~\ref{sec:rc-results}.
+
+\subsection{Bias and variance}\label{sec:rc-biasvar}
+
+The construction trades nominal optimality for distributional stability, and $\kappa$ sets the rate. By the monotonicity used in Proposition~\ref{prop:rc-identity}, the transformed objective is an upper bound on nominal visits whenever any closure strictly contains its order, so the robust layout is weakly worse on the training orders than the nominal optimum. This bias grows with closure size and therefore with $\kappa$: at $\kappa=1$ the transform is the identity and the bias is zero; as $\kappa$ grows the closures expand toward $P$ and the objective loses the ability to separate layouts. Against this, the optimized layout depends on the data only through the pattern hypergraph, a coarse statistic of the order stream, so resampling or shifting demand within the same pattern structure leaves the transformed instance nearly fixed and should shrink the out-of-sample degradation. Under H1 the out-of-sample cost as a function of $\kappa$ is U-shaped: falling while variance reduction dominates, rising once conservatism bias dominates. The interior minimum is the prediction the experiments test.
+
+\subsection{Evaluation functional and metrics}\label{sec:rc-metrics}
+
+Evaluating a fixed layout on fresh orders needs no solver. For a layout $a$ and a test order family $O^{te}$,
+\begin{equation}
+\mathcal V(a, O^{te}) = \sum_{o \in O^{te}} \big|\{\, a(p) : p \in P_o \cap \operatorname{dom}(a) \,\}\big|,
+\label{eq:rc-eval}
+\end{equation}
+with coverage $\kappa_{\text{cov}} = \sum_o |P_o \cap \operatorname{dom}(a)| / \sum_o |P_o|$ reporting the fraction of test lines whose product exists in the training universe. Products unseen in training are excluded from \eqref{eq:rc-eval} identically for every compared layout, so the comparison stays fair. We write the nominal cost $N(a) = \mathcal V(a, O^{tr})$ and the out-of-sample cost $V^{te}(a) = \mathcal V(a, O^{te})$. The two headline metrics compare a robust layout $a_\kappa$ to the nominal layout $a_0$ from the same solver under the same time budget,
+\begin{equation}
+\mathrm{PoR}(\kappa) = \frac{N(a_\kappa) - N(a_0)}{N(a_0)},
+\qquad
+G(\kappa) = \frac{V^{te}(a_0) - V^{te}(a_\kappa)}{V^{te}(a_0)}.
+\label{eq:rc-por-g}
+\end{equation}
+$\mathrm{PoR}$ is the price of robustness, positive when the robust layout costs more on training orders. $G$ is the out-of-sample gain, positive when the robust layout costs less on test orders, which is the direction H1 predicts. A relative-regret metric against a test-reoptimized oracle layout $a^{or}$ completes the set,
+\begin{equation}
+\mathrm{RR}(a) = \frac{\mathcal V(a, O^{te}) - \mathcal V(a^{or}, O^{te})}{\mathcal V(a^{or}, O^{te})},
+\label{eq:rc-rr}
+\end{equation}
+where the oracle is optimized directly on the test orders and serves only as a normalizer. The headline object is never a single number but the tradeoff curve $\{(\mathrm{PoR}(\kappa), G(\kappa))\}$ indexed by the realized enlargement, reported in Section~\ref{sec:rc-results}.
+
+% =====================================================================
+\section{Experimental design}\label{sec:rc-design}
+% =====================================================================
+
+\subsection{Train and test protocol}\label{sec:rc-protocol}
+
+The protocol forbids leakage. The construction operator sees only the training orders. The transform sees only the training instance. Every solver run that produces a nominal or robust layout sees only training-derived files. Test orders are read only by the evaluation functional \eqref{eq:rc-eval}, with the single labeled exception of the oracle runs. Station and product files derive from the training universe, and test evaluation restricts to the assigned domain with coverage reported. The harness asserts and logs disjointness of the train and test order identifiers on every run.
+
+\subsection{Synthetic order-shift family}\label{sec:rc-zhang}
+
+The synthetic shift family freezes the product and station files to the training instance and regenerates orders only, using the common-itemset mechanics of \citet{zhang2019}. A shift is indexed by the itemset-injection probability $\theta'$ and the resampling fraction $\rho$, where $\rho=0$ is pure sampling noise and $\rho=1$ replaces the common-itemset pool entirely, that is, a full replacement of the correlation structure over the same product universe. The test grid is $\theta' \in \{0.5, 0.7, 0.9\}$ crossed with $\rho \in \{0, 0.5, 1.0\}$ crossed with five test seeds, for 45 shifted test cells per instance. The synthetic instance is \texttt{syn\_50sku}, rebuilt and rerun on three training seeds $\{42, 142, 242\}$, with the training seed disjoint from the test seeds in every cell. The knob grid is $\kappa \in \{1,2,3\}$. The $\kappa=1$ arm must reproduce the nominal result exactly, which is a built-in correctness check. An earlier $\kappa=4$ arm saturated under the construction backend, with closures collapsing to the identity ($\bar c \approx 1.0$, zero strict growth); it is retired as degenerate and replaced by a genuinely non-degenerate $\kappa=3$ arm ($\bar c \approx 2.18$ to $2.23$). The solvers exercised are the greedy clustering heuristic, simulated annealing, and the genetic algorithm. A separate single-seed control regenerates only the time capacity \eqref{eq:rc-Ts} without enlargement, isolating the recalibration side-channel discussed in Section~\ref{sec:rc-limitations}.
+
+\subsection{Industrial temporal hold-out}\label{sec:rc-berner}
+
+The industrial instance (hereafter Company B) is the order-line file used in the main manuscript's temporal study. It carries no date column, so the temporal split rests on the assumption, verified on the file, that order identifiers are numeric and monotone in time; ranking by order identifier and cutting at the ten-of-thirteen-week quantile yields an early-train, late-test split. The realized split has 219{,}121 train orders over 21{,}316 products and 65{,}737 test orders, sharing 25 stations. The train and test order-identifier sets are asserted disjoint with a clean temporal cut. Products and stations are frozen from the train window, so the test window contributes orders only. The station configuration is replicated from the repository's industrial loader on the training window. The knob grid is $\kappa \in \{1,2,3\}$ on the pre-built covers.
+
+\subsection{Oracle probe}\label{sec:rc-oracle}
+
+The relative-regret metric \eqref{eq:rc-rr} is computed as a small probe rather than over the full grid. The oracle is the test-reoptimized layout for each solver under the same time budget, with the test orders seen only as the normalizer. The probe covers two corner cells, $\theta'=0.7$ with $\rho \in \{0, 1.0\}$, for the three solvers at $\kappa \in \{1,2\}$.
+
+\subsection{Solver and tooling constraints}\label{sec:rc-tooling}
+
+Two constraints bound the evidence and we state them here rather than burying them. First, no exact commercial solver ran. The Gurobi module did not import in the experimental environment, so the Gurobi MILP and column-generation arms could not run, and the construction itself ran on the open HiGHS backend through SciPy rather than the committed Gurobi port. Under HiGHS the integer master did not return an incumbent on the full distinct-support set, so the cover was driven by a fixed-seed subsample of the distinct supports; closures \eqref{eq:rc-closure} are still computed over all orders, and only the cover-driver support set is capped. The published acceptance number $\Pi^\*=6$ on the notebook slice was not reproduced under HiGHS and is reported as a non-reproduction, not a silent pass. Second, because the master saw a subsample on the industrial instance, the stored bottleneck is $\Pi_{\text{constrained}}$ rather than $\Pi_{\text{true}}$, and we report both.
+
+\subsection{Statistical treatment}\label{sec:rc-stats}
+
+The design is paired. For a fixed training instance and solver, the nominal and robust layouts are evaluated on identical test cells, so the gain $G$ is a paired difference. Within each training seed we apply the Wilcoxon signed-rank test on the paired differences. Across the three seeds we pool the 135 paired differences, combine the per-seed signed-rank statistics by Stouffer's method, and run a binomial sign test on the 18 per-(seed, solver, $\kappa$) cell means. We report effect sizes and confidence intervals alongside p-values. The industrial hold-out is a single test cell, so it yields point estimates with no confidence interval, and we say so.
+
+% =====================================================================
+\section{Results}\label{sec:rc-results}
+% =====================================================================
+
+\subsection{Synthetic results: a stable price, an unstable gain}\label{sec:rc-syn}
+
+The price of robustness is stable and the out-of-sample gain is not. Every one of the 18 genuine synthetic cells records a positive $\mathrm{PoR}$, ranging from $+0.05\%$ to $+6.96\%$ and rising roughly with $\kappa$. The nominal price the construction charges is real and behaves as Proposition~\ref{prop:rc-identity} and the bias analysis predict. The gain $G$ does not match it. Across the three training seeds only one cell is sign-stable and significant: the genetic-algorithm layout at $\kappa=2$, positive on all three seeds, pooled Wilcoxon $p=0.003$, Stouffer $p=0.003$, mean $G=+0.58\%$ with 95\% CI $[+0.18, +0.98]$. \Cref{tab:rc-pooled} reports the pooled cross-seed picture.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{threeparttable}
+  \begin{tabular}{@{}llrrlrl@{}}
+    \toprule
+    Solver & $\kappa$ & Mean $G$ (\%) & 95\% CI & Sign (42/142/242) & Pooled Wilcoxon $p$ & Stouffer $z$ ($p$) \\
+    \midrule
+    Heuristic & 2 & $+0.03$ & $[-0.29,+0.35]$ & $+\,/\,-\,/\,+$ & 0.479 & $+0.58$ (0.565) \\
+    Heuristic & 3 & $-0.18$ & $[-0.46,+0.10]$ & $-\,/\,-\,/\,+$ & 0.186 & $-0.70$ (0.484) \\
+    SA        & 2 & $-0.03$ & $[-0.38,+0.33]$ & $+\,/\,-\,/\,-$ & 0.144 & $+0.70$ (0.486) \\
+    SA        & 3 & $+0.25$ & $[-0.15,+0.64]$ & $+\,/\,+\,/\,+$ & 0.238 & $+1.36$ (0.173) \\
+    \textbf{GA} & \textbf{2} & $\mathbf{+0.58}$ & $\mathbf{[+0.18,+0.98]}$ & $\mathbf{+\,/\,+\,/\,+}$ & \textbf{0.0030} & $\mathbf{+2.98}$ \textbf{(0.003)} \\
+    GA        & 3 & $-0.37$ & $[-0.75,+0.01]$ & $+\,/\,-\,/\,-$ & 0.117 & $-1.10$ (0.270) \\
+    \bottomrule
+  \end{tabular}
+  \begin{tablenotes}\footnotesize
+    \item Pooled over 135 paired differences (three seeds, 45 cells each). The genetic-algorithm layout at $\kappa=2$ is the only sign-stable, significant positive gain. Binomial sign test over the 18 cell means: 11 of 18 positive, $p=0.48$.
+  \end{tablenotes}
+  \end{threeparttable}
+  \caption{Pooled cross-seed out-of-sample gain $G(\kappa)$ on \texttt{syn\_50sku}.}
+  \label{tab:rc-pooled}
+\end{table}
+
+The replication test is decisive and partly negative. An earlier single-seed run on seed 42 had shown a positive gain at $\kappa=2$ for all three solvers (heuristic $+0.54\%$, SA $+0.85\%$, GA $+1.48\%$). On the two new seeds that pattern does not hold. The heuristic gain turns significantly negative on seed 142 ($-0.69\%$, $p=0.03$), and the SA gain is negative on both new seeds. Pooled across the three seeds, only the genetic-algorithm cell at $\kappa=2$ survives. The seed-42 cross-solver result was substantially a single-draw artifact. The binomial sign test over the 18 cell means gives 11 of 18 positive with $p=0.48$, so there is no global directional effect. We report this non-replication as a finding.
+
+The shape of the tradeoff in $\kappa$ does not show the predicted interior optimum. With a genuinely non-degenerate $\kappa=3$ arm ($\bar c \approx 2.18$ to $2.23$ against $\kappa=2$'s $\approx 1.75$), a two-point curve in realized enlargement exists for the first time. The price rises from $\kappa=2$ to $\kappa=3$, consistent with bias growing in closure size. The gain does not: moving to $\kappa=3$ leaves $G$ flat or worse in most cells (pooled heuristic $+0.03\%$ to $-0.18\%$; pooled GA $+0.58\%$ to $-0.37\%$). The right arm of the predicted U-shape, where over-conservatism hurts, is weakly visible. The left arm, a genuine interior optimum beating $\kappa=1$, is not established, because $\kappa=2$ itself is unstable across seeds. The honest curve statement is increasing nominal price with no commensurate out-of-sample gain beyond $\kappa=2$ on the synthetics. \Cref{fig:rc-tradeoff} sketches the curve against realized enlargement $\bar c$.
+
+\begin{figure}[t]
+  \centering
+  % TODO(plotting): generate the PoR--G tradeoff curve from
+  %   Baselines/results_robustness_summary.csv, x-axis = realized enlargement
+  %   c_bar (kappa=2 ~ 1.75, kappa=3 ~ 2.2), one line per solver, separate
+  %   panels for rho in {0, 0.5, 1.0}. Marker for the GA kappa=2 point.
+  %   Replace the framebox below with \includegraphics{rc_tradeoff}.
+  \framebox[0.85\linewidth]{\rule{0pt}{4.5cm}\;\textit{Tradeoff curve placeholder (see TODO in source).}}
+  \caption{Price of robustness against out-of-sample gain, plotted against realized enlargement $\bar c$ ($\kappa=2 \approx 1.75$, $\kappa=3 \approx 2.2$) rather than nominal $\kappa$. The price rises with $\bar c$ on every solver; the gain does not rise commensurately beyond $\kappa=2$.}
+  \label{fig:rc-tradeoff}
+\end{figure}
+
+\subsection{Oracle regret probe}\label{sec:rc-oracle-res}
+
+Regret to the test-reoptimized oracle is modest, with $\mathrm{RR}$ between $-0.03$ and $+0.24$ across the probe. The $\kappa=2$ advantage over $\kappa=1$ is cell- and solver-dependent. At the no-shift corner ($\rho=0$) only simulated annealing improves; at the full-shift corner ($\rho=1.0$) both the heuristic and simulated annealing improve, the heuristic flipping from worse at $\rho=0$ to better at $\rho=1.0$. This is weakly consistent with the mechanism behind H1, that any advantage of the enlarged layout should concentrate at large shift. The genetic algorithm is worse at both probe cells, which partly contradicts its pooled multi-cell win and reflects how underpowered a two-cell, single-seed probe is. The oracle reading corroborates the direction of the mechanism but cannot carry weight.
+
+\subsection{Industrial temporal hold-out}\label{sec:rc-berner-res}
+
+On the industrial hold-out the evidence is narrow and we report only the heuristic. Simulated annealing did not scale: its objective costs about 1.1 seconds per call at this size, so a single cooling step runs roughly 19 minutes and the 120-second budget admits less than one step. We skipped the enlarged simulated-annealing arms rather than report a one-step run. The genetic algorithm reached only its second generation in the budget and returned a byte-identical layout across all three arms, so it produced no arm differentiation. The heuristic is the only solver that both scaled and produced distinct layouts. \Cref{tab:rc-berner} reports its result.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{threeparttable}
+  \begin{tabular}{@{}llrrrrr@{}}
+    \toprule
+    Solver & $\kappa$ & $N$ (train) & $V^{te}$ (test) & $\mathrm{PoR}$ (\%) & $G$ (\%) & $\kappa_{\text{cov}}$ \\
+    \midrule
+    Heuristic & 1 & 578{,}111 & 164{,}140 & 0.00 & 0.00 & 0.9891 \\
+    Heuristic & 2 & 572{,}765 & 163{,}607 & $-0.92$ & $+0.32$ & 0.9891 \\
+    Heuristic & 3 & 563{,}947 & 160{,}888 & $-2.45$ & $+1.98$ & 0.9891 \\
+    \bottomrule
+  \end{tabular}
+  \begin{tablenotes}\footnotesize
+    \item Single real temporal test cell, so point estimates with no confidence interval. Coverage is identical across arms; unseen products are excluded identically. Capacity violations are identical across arms (one workload violation, zero capacity violations), so feasibility does not confound the comparison. Simulated annealing did not scale to the enlarged arms; the genetic algorithm returned an identical non-differentiating layout.
+  \end{tablenotes}
+  \end{threeparttable}
+  \caption{Industrial temporal hold-out, greedy clustering heuristic. $\Pi_{\text{constrained}}$ is 34 ($\kappa=2$) and 23 ($\kappa=3$); $\Pi_{\text{true}}$ on the full stream is 369 and 360.}
+  \label{tab:rc-berner}
+\end{table}
+
+The heuristic lowers training visits and test visits at the same time, and both effects strengthen with $\kappa$. This looks like a free lunch, a robustness gain bought at a negative nominal price, and the protocol flags exactly that pattern as a leak or bug to investigate. An independent recomputation of every heuristic layout on every relevant order set shows it is benign and explains the mechanism. The robust layouts genuinely minimize their own enlarged objective, so the transform did its job. The nominal $\kappa=1$ layout is not the true CSLAP optimum: it is a greedy clustering solution and provably suboptimal. The enlarged instance hands the same greedy a denser co-occurrence signal, which steers it to a layout that happens to be better on the real objective as well. This does not contradict Proposition~\ref{prop:rc-identity}, whose price-of-robustness inequality holds at optimality; a better-guided suboptimal layout can beat a worse-guided suboptimal layout on the real objective. The simultaneous improvement is a property of heuristic suboptimality, not of the method dominating for free.
+
+Leakage is ruled out independently. The train and test order-identifier sets are disjoint with a clean temporal cut, the construction draws from the training orders and none of the test orders, products and stations are frozen from the train window, and coverage is identical across arms. The strongest claim the hold-out supports is the following. On one real industrial temporal hold-out, the enlarged covering layout produced by the greedy heuristic, the only solver that scaled and differentiated, reduced both training visits and out-of-sample test visits relative to the nominal heuristic layout, by $-0.9\%$ on training and $+0.3\%$ on test at $\kappa=2$ and by $-2.5\%$ and $+2.0\%$ at $\kappa=3$. This is a single uncorroborated cell with no confidence interval; simulated annealing did not scale and the genetic algorithm did not differentiate at this scale.
+
+% =====================================================================
+\section{Limitations}\label{sec:rc-limitations}
+% =====================================================================
+
+\paragraph{(a) Constrained versus true bottleneck.}
+On the industrial instance the master saw a subsampled support set, so the stored bottleneck is $\Pi_{\text{constrained}}$ (34 at $\kappa=2$, 23 at $\kappa=3$), while the true bottleneck over the full stream of 142{,}241 distinct supports is $\Pi_{\text{true}}$ (369 at $\kappa=2$, 360 at $\kappa=3$). The worst-case bound of Proposition~\ref{prop:wc-bound} is therefore conditional on the full-stream bottleneck, and the subsampled construction does not certify global min-max optimality. The partition itself is valid on the full stream and Proposition~\ref{prop:rc-identity} is unaffected, since the identity depends only on monotonicity and on closures taken over all orders.
+
+\paragraph{(b) No exact solver.}
+No exact commercial solver ran. The Gurobi module did not import, so the construction and all placement arms ran on the open HiGHS backend rather than the committed Gurobi port, and the published acceptance value $\Pi^\*=6$ on the notebook slice was not reproduced under HiGHS. The exact MILP and column-generation arms of the main manuscript are therefore absent from this study.
+
+\paragraph{(c) The recalibration side-channel.}
+The time-capacity recalibration \eqref{eq:rc-Ts} is applied on the enlarged arms, so $\mathrm{PoR}$ and $G$ mix the effect of enlargement with the effect of capacity recalibration. The single-seed control that recalibrates the time capacity without enlargement moves the heuristic nominal cost by $-3.16\%$ and the gain by $-0.30\%$ on its own. The two effects are confounded in the reported metrics and a full separation would require a recalibration-only arm on every cell.
+
+\paragraph{(d) Narrow industrial evidence.}
+The industrial result is a single temporal cell, so it has no confidence interval. Simulated annealing did not scale to the enlarged arms and the genetic algorithm degenerated to a seed-fixed layout at the 120-second budget, so the industrial signal rests on one solver on one split.
+
+\paragraph{(e) Oracle probe scope.}
+The relative-regret reading is a two-cell, single-seed probe at $\theta'=0.7$ with $\rho \in \{0, 1.0\}$, not the full grid. It indicates the direction of the mechanism and nothing stronger.
+
+Throughout, the tradeoff figures are plotted against the realized enlargement $\bar c$ ($\kappa=2 \approx 1.75$, $\kappa=3 \approx 2.2$) rather than nominal $\kappa$, because the realized enlargement is what the layout actually sees and it differs from $\kappa$ whenever the cover saturates.
+
+% =====================================================================
+\section{Conclusion}\label{sec:rc-conclusion}
+% =====================================================================
+
+We recast CSLAP placement under demand shift as a covering-based instance transformation and proved it equals a data-driven static robust counterpart of the empirical objective (Proposition~\ref{prop:rc-identity}), solved exactly by the unchanged solvers because the inner maximization is trivial under monotonicity. The construction is sound and reusable, and the price of robustness it charges is real and stable across every genuine synthetic cell. The out-of-sample payoff is conditional. Across three training seeds only the genetic-algorithm layout at $\kappa=2$ replicates a positive gain; the earlier single-seed cross-solver signal does not replicate, no global directional effect is present, and the predicted interior optimum in $\kappa$ is absent. On one industrial temporal hold-out the greedy heuristic lowered both training and test visits, which we attribute to the enlarged objective guiding a suboptimal solver to a better real-objective layout rather than to the method dominating for free, with leakage excluded by an independent recomputation on a disjoint split. The finding is that H1 is conditionally supported and solver- and seed-dependent, with a stable price and an unstable gain.
+
+Four directions would sharpen the evidence. Running an exact solver at scale would let the price-of-robustness inequality be observed at optimality, where Proposition~\ref{prop:rc-identity} bites, rather than through a suboptimal heuristic. A scalable simulated-annealing objective would restore a second metaheuristic on the industrial instance, where the current objective cost per call rules it out. Validating on several industrial cells and several temporal cuts would attach dispersion to the industrial gain, which is presently a single point. Running the full cover on the complete support stream, without the subsample the backend forced, would certify $\Pi_{\text{true}}$ directly and let Proposition~\ref{prop:wc-bound} be stated unconditionally.
+
+% =====================================================================
+\section*{References}
+% =====================================================================
+% Verified references only (Stage-1 research report, 18 load-bearing items).
+% No fabricated citations. Authors / venue / year / DOI as verified in-session.
+\begin{thebibliography}{99}
+
+\bibitem[Balas and Padberg(1976)]{balas1976}
+Balas, E., Padberg, M.W., 1976. Set partitioning: a survey. SIAM Review 18(4), 710--760. DOI: 10.1137/1018115.
+
+\bibitem[Karp(1972)]{karp1972}
+Karp, R.M., 1972. Reducibility among combinatorial problems, in: Complexity of Computer Computations. Plenum Press, pp. 85--103. DOI: 10.1007/978-1-4684-2001-2\_9.
+
+\bibitem[Ben-Tal and Nemirovski(1999)]{bental1999}
+Ben-Tal, A., Nemirovski, A., 1999. Robust solutions of uncertain linear programs. Operations Research Letters 25(1), 1--13. DOI: 10.1016/S0167-6377(99)00016-4.
+
+\bibitem[Bertsimas and Sim(2004)]{bertsimas2004}
+Bertsimas, D., Sim, M., 2004. The price of robustness. Operations Research 52(1), 35--53. DOI: 10.1287/opre.1030.0065.
+
+\bibitem[Bertsimas et al.(2011)]{bbc2011}
+Bertsimas, D., Brown, D.B., Caramanis, C., 2011. Theory and applications of robust optimization. SIAM Review 53(3), 464--501. DOI: 10.1137/080734510.
+
+\bibitem[Delage and Ye(2010)]{delage2010}
+Delage, E., Ye, Y., 2010. Distributionally robust optimization under moment uncertainty with application to data-driven problems. Operations Research 58(3), 595--612. DOI: 10.1287/opre.1090.0741.
+
+\bibitem[Mohajerin Esfahani and Kuhn(2018)]{esfahani2018}
+Mohajerin Esfahani, P., Kuhn, D., 2018. Data-driven distributionally robust optimization using the Wasserstein metric. Mathematical Programming 171(1--2), 115--166. DOI: 10.1007/s10107-017-1141-8.
+
+\bibitem[Bertsimas et al.(2018)]{bgk2018}
+Bertsimas, D., Gupta, V., Kallus, N., 2018. Data-driven robust optimization. Mathematical Programming 167(2), 235--292. DOI: 10.1007/s10107-017-1125-8.
+
+\bibitem[Birge and Louveaux(2011)]{birge2011}
+Birge, J.R., Louveaux, F., 2011. Introduction to Stochastic Programming, 2nd ed. Springer. DOI: 10.1007/978-1-4614-0237-4.
+
+\bibitem[Kleywegt et al.(2002)]{kleywegt2002}
+Kleywegt, A.J., Shapiro, A., Homem-de-Mello, T., 2002. The sample average approximation method for stochastic discrete optimization. SIAM Journal on Optimization 12(2), 479--502. DOI: 10.1137/S1052623499363220.
+
+\bibitem[Heitsch and R\"omisch(2003)]{heitsch2003}
+Heitsch, H., R\"omisch, W., 2003. Scenario reduction algorithms in stochastic programming. Computational Optimization and Applications 24(2--3), 187--206. DOI: 10.1023/A:1021805924152.
+
+\bibitem[Rockafellar and Wets(1991)]{rockafellar1991}
+Rockafellar, R.T., Wets, R.J.-B., 1991. Scenarios and policy aggregation in optimization under uncertainty. Mathematics of Operations Research 16(1), 119--147. DOI: 10.1287/moor.16.1.119.
+
+\bibitem[de Koster et al.(2007)]{dekoster2007}
+de Koster, R., Le-Duc, T., Roodbergen, K.J., 2007. Design and control of warehouse order picking: a literature review. European Journal of Operational Research 182(2), 481--501. DOI: 10.1016/j.ejor.2006.07.009.
+
+\bibitem[Reyes et al.(2019)]{reyes2019}
+Reyes, J.J.R., Solano-Charris, E.L., Montoya-Torres, J.R., 2019. The storage location assignment problem: a literature review. International Journal of Industrial Engineering Computations 10(2), 199--224. DOI: 10.5267/j.ijiec.2018.8.001.
+
+\bibitem[Mantel et al.(2007)]{mantel2007}
+Mantel, R.J., Schuur, P.C., Heragu, S.S., 2007. Order oriented slotting: a new assignment strategy for warehouses. European Journal of Industrial Engineering 1(3), 301--316. DOI: 10.1504/EJIE.2007.014689.
+
+\bibitem[Xiao and Zheng(2012)]{xiao2012}
+Xiao, J., Zheng, L., 2012. Correlated storage assignment to minimize zone visits for BOM picking. International Journal of Advanced Manufacturing Technology 61(5--8), 797--807. DOI: 10.1007/s00170-011-3740-5.
+
+\bibitem[Zhang et al.(2019)]{zhang2019}
+Zhang, R.-Q., Wang, M., Pan, X., 2019. New model of the storage location assignment problem considering demand correlation pattern. Computers \& Industrial Engineering 129, 210--219. DOI: 10.1016/j.cie.2019.01.027.
+
+\bibitem[Gademann and van de Velde(2005)]{gademann2005}
+Gademann, N., van de Velde, S., 2005. Order batching to minimize total travel time in a parallel-aisle warehouse. IIE Transactions 37(1), 63--75. DOI: 10.1080/07408170590516917.
+
+\bibitem[Kofler et al.(2014)]{kofler2014}
+Kofler, M., Beham, A., Wagner, S., Affenzeller, M., 2014. Affinity based slotting in warehouses with dynamic order patterns, in: Advanced Methods and Applications in Computational Intelligence. Topics in Intelligent Engineering and Informatics, vol. 6, Springer, pp. 123--143. DOI: 10.1007/978-3-319-01436-4\_7.
+
+\end{thebibliography}
+
+\end{document}

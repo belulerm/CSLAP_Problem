@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python run_robustness_experiment.py --instances syn_50sku_s142 --solvers heuristic --k 1 2 3 --dir ../synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 142 --time-50 60 --cover-max-supports 350 --cooccurrence-pairs 4000 --cover-json-dir covers --quick)",
+      "Bash(python run_robustness_experiment.py --instances syn_50sku_s142 --solvers sa --k 1 2 3 --dir ../synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 142 --time-50 60 --cover-max-supports 350 --cooccurrence-pairs 4000 --cover-json-dir covers --quick)",
+      "Bash(python run_robustness_experiment.py --instances syn_50sku_s142 --solvers ga --k 1 2 3 --dir ../synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 142 --time-50 60 --cover-max-supports 350 --cooccurrence-pairs 4000 --cover-json-dir covers --quick)",
+      "Bash(python run_robustness_experiment.py --instances syn_50sku_s242 --solvers heuristic --k 1 2 3 --dir ../synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 242 --time-50 60 --cover-max-supports 350 --cooccurrence-pairs 4000 --cover-json-dir covers --quick)",
+      "Bash(python run_robustness_experiment.py --instances syn_50sku_s242 --solvers sa --k 1 2 3 --dir ../synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 242 --time-50 60 --cover-max-supports 350 --cooccurrence-pairs 4000 --cover-json-dir covers --quick)",
+      "Bash(python run_robustness_experiment.py --instances syn_50sku_s242 --solvers ga --k 1 2 3 --dir ../synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 242 --time-50 60 --cover-max-supports 350 --cooccurrence-pairs 4000 --cover-json-dir covers --quick)",
+      "Bash(python -c ' *)",
+      "Bash(python run_oracle_rr.py)",
+      "PowerShell($b = \"c:\\\\Users\\\\ebelul\\\\My Savoye project\\\\CSLAP_Problem\\\\Different_Solution_Approaches\\\\Full_Package_Code_With_All_Approaches\\\\CSLAP-Synthetic\\\\Baselines\"; Get-ChildItem $b -File | Sort-Object LastWriteTime -Descending | Select-Object -First 25 Name, Length, LastWriteTime | Format-Table -AutoSize; \"--- logs dir ---\"; if \\(Test-Path \"$b\\\\logs\"\\) { Get-ChildItem \"$b\\\\logs\" | Sort-Object LastWriteTime -Descending | Select-Object -First 10 Name, Length, LastWriteTime }; \"--- layouts count ---\"; \\(Get-ChildItem \"$b\\\\layouts\" -File\\).Count)",
+      "PowerShell($b = \"c:\\\\Users\\\\ebelul\\\\My Savoye project\\\\CSLAP_Problem\\\\Different_Solution_Approaches\\\\Full_Package_Code_With_All_Approaches\\\\CSLAP-Synthetic\\\\Baselines\"; \"=== summary csv ===\"; Get-Content \"$b\\\\results_robustness_summary.csv\"; \"=== oracle csv ===\"; Get-Content \"$b\\\\results_oracle_rr.csv\" | Select-Object -First 12)",
+      "PowerShell(\"--- cover json? ---\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\('covers/cover_berner_10w3w_train_k2.json'\\)\\); print\\('keys:', list\\(d.keys\\(\\)\\)\\); print\\({k:v for k,v in d.items\\(\\) if k!='patterns'}\\); print\\('n_patterns_in_file:', len\\(d.get\\('patterns', []\\)\\)\\)\")",
+      "Bash(python c:\\\\tmp\\\\t5a_reconcile.py)",
+      "Bash(python \"c:/tmp/t5a_reconcile.py\")",
+      "Bash(python \"c:/tmp/t5b_k3_transform.py\")",
+      "Bash(find . -iname \"*iscf*\" -maxdepth 4)",
+      "Bash(ls -la \"ISCF Data\")",
+      "Bash(find . -type d -iname \"*iscf*\")",
+      "Bash(awk -F',' 'NR>1{p[$2]++; o[$5]++} END{print \"distinct products:\", length\\(p\\); print \"distinct orders:\", length\\(o\\); print \"total lines:\", NR-1}' Products_data_ISCF.csv)",
+      "Bash(awk -F',' 'NR>1{g[$4]++} END{for\\(k in g\\) print k, g[k]}' Location_data_ISCF.csv)",
+      "Bash(awk -F',' 'NR>1{cnt[$5]++} END{for\\(o in cnt\\){s+=cnt[o]; n++; if\\(cnt[o]>mx\\)mx=cnt[o]; if\\(mn==0||cnt[o]<mn\\)mn=cnt[o]} print \"orders:\",n,\" mean size:\",s/n,\" min:\",mn,\" max:\",mx}' Products_data_ISCF.csv)"
+    ]
+  }
+}

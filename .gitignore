@@ -1,0 +1,40 @@
+# graphify outputs (derived artifact - rebuild with `/graphify .`)
+graphify-out/
+
+# graphify temp files
+.graphify_*.json
+.graphify_*.txt
+
+# Large industrial data files (>50 MB — use Git LFS or store externally)
+ISCF Data/Products_data_ISCF.csv
+Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/Heuristic_Connex_Set_Project/data/BERNER_ORDER_LINES_09-12.csv
+
+# Compiled Windows binary (Tectonic LaTeX engine)
+Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/tectonic.exe
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Solver output artifacts (generated, not source)
+Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/Baselines/layouts/
+Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/Baselines/covers/
+Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/Baselines/logs/
+Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/Baselines/results_*.csv
+Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/Baselines/berner_t5c_solver_runs.csv
+synthetic_datasets/
+**/synthetic_datasets/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Machine-specific / IDE config and secrets
+**/.env
+**/.vscode/
+
+# External reference repo (UTC P-K Set Cover — clone manually: gitlab.utc.fr/naicardi/p-k-set-cover)
+Different_Solution_Approaches/Topology_referal_from_another_problem/P-K Set Cover/p-k-set-cover/

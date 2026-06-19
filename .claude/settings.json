@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "allow": [
+      "web_search",
+      "web_fetch",
+      "Bash(python -u -c ' *)",
+      "Bash(echo \"EXIT $?\")",
+      "Bash(tail -12 logs/robustness_harness.log)",
+      "Bash(grep -c \"WARN U7b\" \"C:\\\\Users\\\\ebelul\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-ebelul-My-Savoye-project-CSLAP-Problem\\\\d95c4837-655d-4b05-9b16-4f2d8e4591ee\\\\tasks\\\\bnzpzdnav.output\")",
+      "Bash(taskkill //F //PID 25980)",
+      "Bash(python -u Baselines/run_robustness_experiment.py --instances syn_50sku --solvers heuristic sa ga --k 1 2 4 --dir synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 42 --variant exact --backend highs --time-50 60 --quick --cover-max-supports 150)",
+      "Bash(grep -i \"WARN U7b\" logs/_probe_500sku_k6.err)",
+      "Bash(python -c ' *)",
+      "Bash(cp Baselines/results_robustness_summary.csv Baselines/results_robustness_summary_50sku_backup.csv)",
+      "Bash(python -u Baselines/run_robustness_experiment.py --instances syn_500sku --solvers heuristic sa ga --k 1 2 --dir synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 42 --variant exact --backend highs --time-500 60 --quick --cover-max-supports 150)",
+      "Bash(python -c \"import pandas as pd; df=pd.read_csv\\('synthetic_datasets/syn_50sku_orders.csv',sep=';'\\); dup=df.groupby\\(['ORDER','PRODUCT']\\).size\\(\\); print\\('rows total:',len\\(df\\)\\); print\\('pairs with >1 row:',\\(dup>1\\).sum\\(\\)\\); print\\('total dup rows:',\\(dup[dup>1].sum\\(\\)-\\(dup>1\\).sum\\(\\)\\)\\); import numpy as np; print\\('orig L_p sum:', df.groupby\\('PRODUCT'\\).size\\(\\).sum\\(\\)\\); print\\('distinct \\(ORDER,PRODUCT\\) pairs:', len\\(dup\\)\\)\")",
+      "Bash(python -c \"import pandas as pd; e=pd.read_csv\\('Baselines/results_robustness_eval.csv'\\); print\\('total rows:',len\\(e\\)\\); print\\(e['split'].value_counts\\(\\)\\); print\\('instances:',e['instance'].unique\\(\\)\\)\")",
+      "Bash(awk '{print $6, $7}')",
+      "Bash(python -c \"import numpy,scipy,pandas; print\\('np',numpy.__version__,'scipy',scipy.__version__,'pd',pandas.__version__\\)\")",
+      "Bash(python pk_instance_robust.py --prefix syn_50sku --dir ../synthetic_datasets --k 4 --time 400 --pricing-time 15 --cover-max-supports 350 --cooccurrence-pairs 4000)",
+      "Bash(python pk_instance_robust.py --prefix syn_50sku --dir ../synthetic_datasets --k 4 --time 350 --pricing-time 15 --cover-max-supports 120 --cooccurrence-pairs 800)",
+      "Bash(python pk_instance_robust.py --prefix syn_50sku --dir ../synthetic_datasets --k 4 --time 300 --pricing-time 12 --cover-max-supports 350 --cooccurrence-pairs 4000)",
+      "Bash(python pk_instance_robust.py --prefix syn_50sku --dir ../synthetic_datasets --k 3 --time 300 --pricing-time 12 --cover-max-supports 350 --cooccurrence-pairs 4000)",
+      "Bash(python pk_instance_robust.py --prefix syn_50sku --dir ../synthetic_datasets --k 2 --time 200 --pricing-time 12 --cover-max-supports 350 --cooccurrence-pairs 4000)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('run_robustness_experiment.py'\\).read\\(\\)\\); print\\('harness parses OK'\\)\")",
+      "Bash(python -c \"import sys; sys.argv=['x','--help']; exec\\(open\\('run_robustness_experiment.py'\\).read\\(\\)\\)\")",
+      "Bash(python run_robustness_experiment.py --help)",
+      "Bash(python run_robustness_experiment.py --instances syn_50sku --solvers heuristic --k 1 2 3 --dir ../synthetic_datasets --theta-primes 0.5 0.7 0.9 --rhos 0.0 0.5 1.0 --test-seeds 43 44 45 46 47 --train-seed 42 --time-50 60 --cover-max-supports 350 --cooccurrence-pairs 4000 --pkk1-control --quick)",
+      "Bash(python pk_cover_construction.py --prefix syn_50sku --dir ../synthetic_datasets --k 2 --time 200 --pricing-time 12 --cooccurrence-pairs 4000 --out covers/cover_syn_50sku_k2.json)",
+      "Bash(python c:/tmp/build_covers.py syn_50sku)",
+      "Bash(python c:/tmp/build_covers.py syn_50sku_s142)",
+      "Bash(python c:/tmp/build_covers.py syn_50sku_s242)",
+      "Bash(python \"c:/tmp/t5c_solve.py\" berner_10w3w_train_pkk2 heuristic 120)",
+      "Bash(echo \"EXIT_K2=$?\")",
+      "Bash(python \"c:/tmp/t5c_solve.py\" berner_10w3w_train_pkk3 heuristic 120)",
+      "Bash(echo \"EXIT_K3=$?\")",
+      "PowerShell(Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt \\(Get-Date\\).AddMinutes\\(-10\\) } | ForEach-Object { Write-Output \"Killing PID $\\($_.Id\\) started $\\($_.StartTime\\) CPU=$\\([math]::Round\\($_.CPU,1\\)\\)s WS=$\\([math]::Round\\($_.WorkingSet64/1MB,0\\)\\)MB\"; Stop-Process -Id $_.Id -Force })",
+      "Bash(python -c \"import json; [print\\(f, {k:d.get\\(k\\) for k in \\('pi_constrained','pi_true_full_stream','partition_valid'\\)}\\) for f in ['../synthetic_datasets/berner_10w3w_train_pkk2_meta.json','../synthetic_datasets/berner_10w3w_train_pkk3_meta.json'] for d in [json.load\\(open\\(f\\)\\)]]\")",
+      "Bash(rm -f \"c:/tmp/t5a_reconcile.py\" \"c:/tmp/t5b_k3_transform.py\" \"c:/tmp/t5c_solve.py\" \"c:/tmp/t5d_eval.py\" \"c:/tmp/probe_cooc.py\" \"c:/tmp/t5b_out.txt\" \"c:/tmp/t5d_out.txt\" \"c:/tmp/t5c_heur_\"*.txt \"c:/tmp/t5c_ga_\"*.txt \"c:/tmp/t5c_sa_\"*.txt \"c:/tmp/probe_cooc_out.txt\" 2>/dev/null; echo \"temp cleaned; t5c trace + meta + layouts + log all persisted in repo\")",
+      "PowerShell($b = \"c:\\\\Users\\\\ebelul\\\\My Savoye project\\\\CSLAP_Problem\\\\Different_Solution_Approaches\\\\Full_Package_Code_With_All_Approaches\\\\CSLAP-Synthetic\\\\Baselines\"; \"=== summary tail \\(BERNER rows\\) ===\"; Get-Content \"$b\\\\results_robustness_summary.csv\" | Select-Object -Last 10; \"=== t5c trace ===\"; if \\(Test-Path \"$b\\\\berner_t5c_solver_runs.csv\"\\) { Get-Content \"$b\\\\berner_t5c_solver_runs.csv\" }; \"=== eval row count ===\"; \\(Get-Content \"$b\\\\results_robustness_eval.csv\"\\).Count)",
+      "Bash(python \"c:/tmp/stage5_iter2.py\")",
+      "Bash(python \"c:/tmp/stage5_por.py\")",
+      "Bash(python)",
+      "Bash(python \"c:/tmp/berner_freelunch.py\")",
+      "PowerShell($root = \"c:\\\\Users\\\\ebelul\\\\My Savoye project\\\\CSLAP_Problem\"; \"=== manuscript ===\"; Get-ChildItem \"$root\\\\LaTeX_Articles_We_Have_Drafted\" -File | Select-Object Name, Length; \"=== humanizer skill ===\"; if \\(Test-Path \"$root\\\\skills\\\\humanizer-writer\\\\SKILL.md\"\\) { \"EXISTS: \" + \\(Get-Item \"$root\\\\skills\\\\humanizer-writer\\\\SKILL.md\"\\).Length + \" bytes\" } else { \"MISSING\" }; \"=== other writer skills ===\"; foreach \\($s in @\\(\"academic-paper\",\"operations-research-scientific-writing\",\"thesis-chapter-drafting\",\"latex-thesis-build\",\"caveman\"\\)\\) { $p = \"$root\\\\skills\\\\$s\\\\SKILL.md\"; if \\(Test-Path $p\\) { \"EXISTS: $s\" } else { \"MISSING: $s\" } })",
+      "PowerShell($root = \"c:\\\\Users\\\\ebelul\\\\My Savoye project\\\\CSLAP_Problem\"; \"=== reports ===\"; Get-ChildItem \"$root\\\\reports\" -File | Select-Object Name, Length | Format-Table -AutoSize; \"=== draft tex ===\"; if \\(Test-Path \"$root\\\\LaTeX_Articles_We_Have_Drafted\\\\CSLAP_Robust_Covering_draft.tex\"\\) { $f = Get-Item \"$root\\\\LaTeX_Articles_We_Have_Drafted\\\\CSLAP_Robust_Covering_draft.tex\"; \"EXISTS: $\\($f.Length\\) bytes, $\\($f.LastWriteTime\\)\" } else { \"MISSING\" })"
+    ],
+    "additionalDirectories": [
+      "c:\\tmp"
+    ]
+  }
+}

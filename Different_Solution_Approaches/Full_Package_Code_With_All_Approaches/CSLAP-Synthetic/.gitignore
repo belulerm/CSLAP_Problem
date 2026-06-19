@@ -1,0 +1,18 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Generated solver artifacts (do not commit)
+Baselines/layouts/
+Baselines/covers/
+Baselines/logs/
+
+# Results CSVs (large, generated — store externally or reference in reports/)
+Baselines/results_*.csv
+Baselines/berner_t5c_solver_runs.csv
+
+# Synthetic datasets (retired — removed from test infrastructure)
+synthetic_datasets/

@@ -1,0 +1,25 @@
+# Ignore folders with documents and articles
+LaTeX_Articles_We_Have_Drafted/
+logs/
+reports/
+
+# Ignore custom agent definitions
+.claude/
+
+# Ignore custom skills
+skills/
+
+# Ignore all non-code files to avoid semantic extraction (which requires LLM API keys)
+*.md
+*.txt
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.docx
+*.xlsx
+*.csv
+*.json
