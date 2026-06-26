@@ -490,3 +490,50 @@ so the synthetic claim stays "weak/conditional," while the industrial claim is
 "clean but single-cell, heuristic-only." Recommended framing: report BERNER as the
 strong-but-narrow confirmation and the 3-seed synthetics as the
 breadth-but-instability counterweight.
+
+---
+
+## §15. CPLEX-revalidation phase (exact cover + clean ISCF) — coder log
+
+New machine has working CPLEX (`docplex` 2.29 / `cplex` 22.1.1) and Hexaly in **two
+separate venvs**: cover → `Virtual_Environment_CPLEX_1`, placement → `Virtual_Environment_LocalSolver_3`.
+No single interpreter has both, so the new harness is **staged**.
+
+**Code written / changed (all in `Baselines/`):**
+- `iscf_adapter.py` (new): `ISCF Data/` → standard semicolon CSLAP instance. Full ISCF =
+  4328 SKUs / 418,849 orders / 997,198 lines / 8×541 slots (=|P|, κ-invariant). `--top-products N`
+  emits a balanced scaled sub-instance (rounds to a multiple of `--n-stations`). products.csv carries
+  extra κ-invariant cols `REAL_LINES/VOLUME/FREQUENCY` (read_data ignores them).
+- `pk_cover_construction.py`: scipy imports made **lazy** (module now loads in the CPLEX venv, no
+  scipy). Added **`--backend cplex`**: a `_CplexPricing` (docplex pricing MIP, eq. 9) and an
+  **incremental** `_CplexMasterLP` built on the low-level `cplex` API (rows once; columns added in
+  place; warm-started LP re-solves; binary integer master). Added `--no-chunk-seed` (skip the size-k
+  chunk flood; start CG from singletons + co-occurrence merges — needed at ISCF support diversity).
+- `pk_instance_robust.py`: `recalibrate_time_capacity` flag (`--no-recalibrate-time-capacity`) → keep
+  TIME_CAPACITY κ-invariant (G4). Since capacity is κ-invariant, the enlarged stations file ==
+  nominal, so placement needs only the cover **patterns**, not an enlarged-orders file.
+- `run_robustness_iscf.py` (new): staged subcommands `make-folds` (random i.i.d. or `--mode temporal`
+  by ORDER_ID rank), `build-covers` (CPLEX, per fold/k, saves patterns + certified Π_true + c̄),
+  `place` (Hexaly `run_milp_hexaly` UNMODIFIED; real `REAL_LINES` passed as `prod_lines`; top-N
+  frequent supports, raw for κ=1 / closures for κ>1), `evaluate` (visits on REAL train+test, PoR/G,
+  per-station feasibility, 5-fold mean±95% t-CI + paired Wilcoxon).
+
+**Runs / numbers (reproducible from the artifacts):**
+- Acceptance: CPLEX cover on `filtered_dataset.csv` k=6 → certified-optimal **Π\*=5** (valid; ≤ the
+  notebook incumbent 6). `logs/pk_cover_filtered_k6_cplex*.json`.
+- Full-ISCF k=2 cover: **did not certify** in-session (Π_LP≈73; one master LP ≈247 s on a 95k-column
+  pool; integer master over 113k supports infeasible-to-certify) → scaled testbed `iscf480` (480
+  SKUs, 8×60). Lean CG (`--no-chunk-seed`) makes the iscf480 k=2 cover ~40–110 s, **certified
+  optimal** (Π\* 38–50, c̄≈1.5–1.7). k≥3 integer master fails to optimality (k=3 incumbent 71 >
+  k=2 optimum 49) → only κ=2 used.
+- Placement: full-ISCF (108,820 supports) model builds but Hexaly returns infeasible in 20 s (each
+  move re-evaluates a 10^5-order objective) → cap to **top-3000** frequent supports (≈36.6% of
+  multi-item mass); feasible, ~60 s, cap_broken=0.
+- **Headline (5-fold, iscf480, real-order counts):** i.i.d. CV PoR(2)=+6.82% [4.79,8.84],
+  G(2)=−6.84% [−8.96,−4.71]; temporal PoR(2)=+5.12% [2.01,8.22], G(2)=−7.03% [−10.30,−3.75]. Both
+  CIs exclude 0, all 5 folds sign-consistent, cap_broken=0, κ_cov=1.0. **H1 falsified at κ=2.**
+  Artifacts: `iscf_results{,_temporal}/`, `iscf_covers{,_temporal}/`, `iscf_layouts{,_temporal}/`.
+
+Scientific verdict in `reports/7_scientific_report_iscf_cplex.md` (STATUS: ACCEPTED — clean negative).
+Draft updated: `LaTeX_Articles_We_Have_Drafted/CSLAP_Robust_Covering_draft.tex` (new §clean-instance
+design + results, abstract/title/conclusion/limitations).

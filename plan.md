@@ -1,7 +1,19 @@
 # PLAN.md — Unbiased validation of the P–K covering robustness pre-process (CPLEX phase)
 
-**Status:** the first end-to-end run is COMPLETE and ACCEPTED as a *conditional / partial* result.
-This plan defines the next phase: re-test the hypothesis on an **exact solver (CPLEX)** and on
+**Status:** ✅ **THIS PHASE IS COMPLETE.** The exact CPLEX re-validation on the clean κ-invariant
+ISCF instance ran end-to-end and **FALSIFIES H1 at κ=2**: a positive price of robustness (PoR>0)
+but a *negative* out-of-sample gain (G<0) under both 5-fold CV and a temporal split, both 95% CIs
+excluding zero, all folds agreeing, feasibility clean. With κ-invariant capacity there is no free
+lunch. Authoritative write-up: **`reports/7_scientific_report_iscf_cplex.md`**; the LaTeX draft and
+`CLAUDE.md` §7 are updated. The text below is the original plan for this phase, retained for
+provenance — most of it was executed; deviations (Hexaly placement per user directive instead of an
+exact placement MILP; scaled `iscf480` testbed because the full-4328-SKU cover did not certify;
+κ=2 only because the integer master is intractable for κ≥3 at scale; BERNER exact re-validation not
+run at 21k SKUs) are documented in `reports/7_scientific_report_iscf_cplex.md` §D.
+
+---
+
+_Original plan (provenance):_ re-test the hypothesis on an **exact solver (CPLEX)** and on
 **clean, well-distributed data (`ISCF Data/`)** to remove the biases that made the first result
 only conditional. New machine has a working CPLEX runtime; use it.
 

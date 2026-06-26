@@ -21,7 +21,17 @@
       "Bash(find . -type d -iname \"*iscf*\")",
       "Bash(awk -F',' 'NR>1{p[$2]++; o[$5]++} END{print \"distinct products:\", length\\(p\\); print \"distinct orders:\", length\\(o\\); print \"total lines:\", NR-1}' Products_data_ISCF.csv)",
       "Bash(awk -F',' 'NR>1{g[$4]++} END{for\\(k in g\\) print k, g[k]}' Location_data_ISCF.csv)",
-      "Bash(awk -F',' 'NR>1{cnt[$5]++} END{for\\(o in cnt\\){s+=cnt[o]; n++; if\\(cnt[o]>mx\\)mx=cnt[o]; if\\(mn==0||cnt[o]<mn\\)mn=cnt[o]} print \"orders:\",n,\" mean size:\",s/n,\" min:\",mn,\" max:\",mx}' Products_data_ISCF.csv)"
+      "Bash(awk -F',' 'NR>1{cnt[$5]++} END{for\\(o in cnt\\){s+=cnt[o]; n++; if\\(cnt[o]>mx\\)mx=cnt[o]; if\\(mn==0||cnt[o]<mn\\)mn=cnt[o]} print \"orders:\",n,\" mean size:\",s/n,\" min:\",mn,\" max:\",mx}' Products_data_ISCF.csv)",
+      "Bash(ls \"C:\\\\ermal\\\\Virtual_Environment_CPLEX_1\\\\Scripts\" 2>/dev/null | head -30)",
+      "Read(//c/ermal/Virtual_Environment_CPLEX_1/Scripts/**)",
+      "Bash(ls \"C:\\\\ermal\\\\Virtual_Environment_CPLEX_1\\\\Scripts\" | grep -i python; echo \"---\"; ls \"C:\\\\ermal\\\\Virtual_Environment_CPLEX_1\" | head)",
+      "Read(//c/ermal/Virtual_Environment_CPLEX_1/**)",
+      "Bash('C:\\\\ermal\\\\Virtual_Environment_CPLEX_1\\\\Scripts\\\\python.exe' -c ' *)",
+      "Bash(\"C:\\\\ermal\\\\Virtual_Environment_CPLEX_1\\\\Scripts\\\\python.exe\" -c \"import pandas, numpy, scipy; print\\('pandas',pandas.__version__,'numpy',numpy.__version__,'scipy',scipy.__version__\\)\")",
+      "Bash(\"C:\\\\ermal\\\\Virtual_Environment_CPLEX_1\\\\Scripts\\\\python.exe\" \"Different_Solution_Approaches/Full_Package_Code_With_All_Approaches/CSLAP-Synthetic/Baselines/iscf_adapter.py\" --iscf-dir \"ISCF Data\" --out-dir \"iscf_instances\" --prefix iscf)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\ebelul\\.claude\\projects\\c--ermal-CSLAP-Problem-Robust-CSLAP-Problem\\memory"
     ]
   }
 }
