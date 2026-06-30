@@ -119,12 +119,16 @@ def build(
     assert total_cap >= n_keep, f"capacity {total_cap} < |P| {n_keep}"
 
     # PROD_ token products file with REAL_LINES (harness kappa-invariant workload).
+    # PINNED_STATION = the initial dummy assignment a0 (latest-order station, as an
+    # integer STATION_ID). The real per-station caps are calibrated from a0, so the
+    # decomposition needs a0 to build the fair per-station inflated caps T_s^fair.
     def _products_frame() -> pd.DataFrame:
         toks = sorted(prod_station.keys())
         return pd.DataFrame({
             "PRODUCT_ID": toks,
             "REAL_LINES": [int(prod_freq.get(t, 0)) for t in toks],
             "VOLUME": 0, "FREQUENCY": [int(prod_freq.get(t, 0)) for t in toks],
+            "PINNED_STATION": [phys_to_int[prod_station[t]] for t in toks],
         })
 
     def _tok(frame: pd.DataFrame) -> pd.DataFrame:
